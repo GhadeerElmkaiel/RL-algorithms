@@ -11,26 +11,29 @@ import numpy as np
 import pandas as pd
 import argparse
 import os
+import matplotlib.pyplot as plt
+from utils import plot_data, create_plot
 
+# plt.ion()
 
 parser = argparse.ArgumentParser(description='Python Q-learning example')
 parser.add_argument('--test', default=False, action='store_true',
                     help='for testing existing Q-table. When not mentioned will train the q-table')
 parser.add_argument('--q_table_file', type=str, default='q_table.csv', metavar='F',
                     help='The name of csv file that contains the q_table (default: q_table.csv)')
-parser.add_argument('--use_existing_q_table', default=False, action='store_true',
+parser.add_argument('-u','--use_existing_q_table', default=False, action='store_true',
                     help='True for using existing Q-table, Flase for starting from the Beginning')
-parser.add_argument('--save_q_table', default=False, action='store_true',
+parser.add_argument('-s','--save_q_table', default=False, action='store_true',
                     help='True for saving the trained Q-table (This will replace the file that have the name used as argument for --q_table_file)')
-parser.add_argument('--test_after_training', default=False, action='store_true',
+parser.add_argument('-t','--test_after_training', default=False, action='store_true',
                     help='True for testing 20 episods after finishing the training the trained')
 parser.add_argument('--gamma', type=float, default=0.6, metavar='G',
                     help='discount factor (default: 0.6)')
 parser.add_argument('--alpha', type=float, default=0.1,
-                    help='Alpha value (default: 0.1)')
+                    help='learning rate value (default: 0.1)')
 parser.add_argument('--decay', type=float, default=0.95, metavar='D',
                     help='Decay factor (default: 0.95)')
-parser.add_argument('--epsilon', type=float, default=0.99, metavar='E',
+parser.add_argument('-e','--epsilon', type=float, default=0.99, metavar='E',
                     help='Starting epsilon value(default: 0.99)')
 parser.add_argument('--episods', type=int, default=5000,
                     help='Number of training episods')
@@ -64,7 +67,7 @@ save_q_table = args.save_q_table
 
 if train:
     print(f"Training will start now for {episods} episods with the following parameters:")
-    print(f"Gamma= {gamma}, Alpha= {alpha}, decay factor= {decay}, epsilon={epsilon}")
+    print(f"Discount factor (Gamma)= {gamma}, Learning rate (Alpha)= {alpha}, decay factor= {decay}, Exploration probability (epsilon)={epsilon}")
     print(f"render while training= {render_while_training}, render_each= {render_each}, test the results after training= {test_after_training}")
     print(f"q_table file name= {data_file}, save Q-table after training= {save_q_table}")
 
@@ -85,17 +88,14 @@ else:
 import random
 from IPython.display import clear_output
 
-
-
-
 if train:
-
+    fig, ax = create_plot()
     all_rewards = []
     all_penallties = []
+    avarage_rewards = []
 
     # start of training
-    for i in range(1, episods):
-        
+    for i in range(episods):
         state = env.reset()
 
         epoches, penalties, rewards = 0, 0, 0
@@ -118,6 +118,8 @@ if train:
             old_value = q_table[state, action]
             next_max = np.max(q_table[next_state])
 
+            # Updating the Q value for the pair (state, action) as follows:
+            # New_Q_value(state, action) = (1-a)* Old_Q_Value + a*(R+ G*Value(next_state)))
             new_value = (1 - alpha) * old_value + alpha*(reward + gamma *next_max)
             q_table[state, action] = new_value
 
@@ -129,14 +131,23 @@ if train:
             rewards += reward
 
         all_rewards.append(rewards)
+        if i ==0:
+            avarage_rewards.append(rewards)
+        elif(i < 100):
+            avarage_rewards.append(sum(all_rewards)*1.0/i)
+        else:
+            avarage_rewards.append(sum(all_rewards[-100:])/100.0)
 
-        if i % 100 == 0:
+        if i % 100 == 0 and i>0:
             epsilon = epsilon*decay
-            clear_output(wait=True)
             print("___________________________________________")
             print(f"Episode: {i}\nCurrent epsilon: {epsilon}")
-            print(f"Avarage reward over past 100 episod: {sum(all_rewards)/100.0}")
-            all_rewards = []
+            print(f"Avarage reward over past 100 episod: {sum(all_rewards[-100:])/100.0}")
+            
+            # Provid the ploter with the data to plot
+            data_dict = {"all rewards": all_rewards, "avg rewards": avarage_rewards}
+            plot_data(ax, data_dict)
+
 
     if save_q_table:
         df = pd.DataFrame(q_table)
