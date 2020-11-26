@@ -3,7 +3,12 @@
 # which can be helpful to test and visualize RL algorithms
 ###################################################################
 # This specific code is for testing Q learing algorithm
-
+# This code by default uses the q_table that has the name q_table.csv
+# this cane be changed while running the code using the argument
+# --q_table_file. Multible other parameters can be changed using 
+# arguments like training arguments as discount value, epsilon, and 
+# learning rate. It is also possible to chosse to render while 
+# while training
 
 import gym
 import time
@@ -19,7 +24,7 @@ from utils import plot_data, create_plot
 parser = argparse.ArgumentParser(description='Python Q-learning example')
 parser.add_argument('--test', default=False, action='store_true',
                     help='for testing existing Q-table. When not mentioned will train the q-table')
-parser.add_argument('--q_table_file', type=str, default='q_table.csv', metavar='F',
+parser.add_argument('--q_table_file', type=str, default='q_table.csv', metavar='The Q table file path',
                     help='The name of csv file that contains the q_table (default: q_table.csv)')
 parser.add_argument('-u','--use_existing_q_table', default=False, action='store_true',
                     help='True for using existing Q-table, Flase for starting from the Beginning')
@@ -27,19 +32,19 @@ parser.add_argument('-s','--save_q_table', default=False, action='store_true',
                     help='True for saving the trained Q-table (This will replace the file that have the name used as argument for --q_table_file)')
 parser.add_argument('-t','--test_after_training', default=False, action='store_true',
                     help='True for testing 20 episods after finishing the training the trained')
-parser.add_argument('--gamma', type=float, default=0.6, metavar='G',
+parser.add_argument('-g','--gamma', type=float, default=0.6, metavar='discount',
                     help='discount factor (default: 0.6)')
-parser.add_argument('--alpha', type=float, default=0.1,
+parser.add_argument('-a', '--alpha', type=float, default=0.1, metavar='learning rate',
                     help='learning rate value (default: 0.1)')
-parser.add_argument('--decay', type=float, default=0.95, metavar='D',
+parser.add_argument('-d', '--decay', type=float, default=0.95, metavar='Decay',
                     help='Decay factor (default: 0.95)')
-parser.add_argument('-e','--epsilon', type=float, default=0.99, metavar='E',
+parser.add_argument('-e','--epsilon', type=float, default=0.99, metavar='Epsilon',
                     help='Starting epsilon value(default: 0.99)')
 parser.add_argument('--episods', type=int, default=5000,
                     help='Number of training episods')
 parser.add_argument('--render_each', type=int, default=100,
                     help='Number of episods before rendering (default:100 "after each 100 episods a full episod will be shown if the argument --render_while_training is set to True")')
-parser.add_argument('--render_while_training', default=False, action='store_true',
+parser.add_argument('-r' ,'--render_while_training', default=False, action='store_true',
                     help='True for rendering first episod of each 100 episod while training')
 
 
@@ -134,7 +139,7 @@ if train:
         if i ==0:
             avarage_rewards.append(rewards)
         elif(i < 100):
-            avarage_rewards.append(sum(all_rewards)*1.0/i)
+            avarage_rewards.append(sum(all_rewards)*1.0/(i+1))
         else:
             avarage_rewards.append(sum(all_rewards[-100:])/100.0)
 
