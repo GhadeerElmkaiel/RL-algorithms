@@ -2,8 +2,8 @@
 # This code is one of many codes which aim to provide a simple tool
 # which can be helpful to test and visualize RL algorithms
 ###################################################################
-# This specific code is for testing Q learing algorithm in  the 
-# Gym MountainCar-v0 environment.
+# This specific code is for testing n-steps TD Q learing algorithm 
+# in the gym MountainCar-v0 environment.
 # It is possible to change and tune # multiple parameters as training
 # parametars (epsilon, learning rate, decay) and the initial Q-values 
 # for each state_action pair. by doing so it is possible to understand 
@@ -52,6 +52,8 @@ parser.add_argument('-i', '--initial_q_value', type=float, default=-10.0, metava
                     help='The initial Q values for each state_action pair (default: -10.0)')
 parser.add_argument('-n', '--n_steps', type=int, default=10, metavar='n steps TD',
                     help='The number of steps to use to calculat q_value (defaule: 10, use -1 for MC learning)')
+parser.add_argument('--done_reward', type=int, default=0, metavar='Final Reward',
+                    help='The reward that the agent gets when finishing an episod (defaule: 0)')
 
 
 args = parser.parse_args()
@@ -104,13 +106,14 @@ render_each             = args.render_each
 save_q_table            = args.save_q_table
 initial_q_value         = args.initial_q_value
 n_steps                 = args.n_steps
+done_reward             = args.done_reward
 
 # Define the writer for tensorboard
 writer = SummaryWriter(comment=f"M-Car_Q_L.ep{epsilon}.lr{alpha}")
 
 # Define The agent
 class QLearningAgent:
-    def __init__(self, alpha, epsilon, discount, get_legal_actions):
+    def __init__(self, alpha, epsilon, discount, get_legal_actions, done_reward=done_reward):
         """
         Q-Learning Agent
         based on practice RL course on coursera
@@ -144,6 +147,7 @@ class QLearningAgent:
         self.alpha = alpha
         self.epsilon = epsilon
         self.discount = discount
+        self.done_reward = done_reward
 
     def get_qvalue(self, state, action):
         """
@@ -185,7 +189,7 @@ class QLearningAgent:
         # in the case of Terminal State
         if next_state == None:
             _q = (1-a)*self.get_qvalue(state, action) + \
-                a*reward
+                a*(reward +self.done_reward) 
         else:
             _q = (1-a)*self.get_qvalue(state, action) + \
                 a*(reward + g*self.get_value(next_state))
@@ -202,7 +206,7 @@ class QLearningAgent:
         l = len(state_action)
         reward = rewards[-1]
         if next_state == None:
-            _q = reward
+            _q = reward + self.done_reward
         else:
             _q = reward + g*self.get_value(next_state)
 
@@ -283,8 +287,8 @@ class QLearningAgent:
         return Q_
 
 # Defining the learning rates and n_steps we want to test
-learning_rates = [0.1, 0.2, 0.5]
-steps = [1, 10, 50]
+learning_rates = [0.2]
+steps = [10, 50]
 
 # Defining dict of an agent and env for each parameters compination 
 # want to test (learning_rate, n_steps)
