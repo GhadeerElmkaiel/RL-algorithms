@@ -3,7 +3,11 @@
 # which can be helpful to test and visualize RL algorithms
 ###################################################################
 # This specific code is for testing Q learing algorithm in  the 
-# Gym MountainCar-v0 environment
+# Gym MountainCar-v0 environment.
+# It is possible to change and tune # multiple parameters as training
+# parametars (epsilon, learning rate, decay) and the initial Q-values 
+# for each state_action pair. by doing so it is possible to understand 
+# how each parameter can affect the training process
 
 
 import gym
@@ -13,6 +17,7 @@ import argparse
 from matplotlib import pyplot as plt
 from utils import plot_data, create_plot
 from collections import defaultdict
+from torch.utils.tensorboard import SummaryWriter
 
 from gym.core import ObservationWrapper
 
@@ -26,9 +31,7 @@ parser.add_argument('--q_table_file', type=str, default='q_table_mountain.csv', 
 parser.add_argument('-u','--use_existing_q_table', default=False, action='store_true',
                     help='True for using existing Q-table, Flase for starting from the Beginning')
 parser.add_argument('-s','--save_q_table', default=False, action='store_true',
-                    help='True for saving the trained Q-table (This will replace the file that have the name used as argument for --q_table_file)')
-# parser.add_argument('--test_after_training', default=False, action='store_true',
-#                     help='True for testing 20 episods after finishing the training the trained')
+                    help='True for saving the trained Q-table (default: False) (This will replace the file that have the name used as argument for --q_table_file)')
 parser.add_argument('-g','--gamma', type=float, default=0.9, metavar='discount',
                     help='discount factor (default: 0.9)')
 parser.add_argument('-a', '--alpha', type=float, default=0.1, metavar='learning rate',
@@ -36,15 +39,19 @@ parser.add_argument('-a', '--alpha', type=float, default=0.1, metavar='learning 
 parser.add_argument('-d', '--decay', type=float, default=0.95, metavar='Decay',
                     help='Decay factor (default: 0.95)')
 parser.add_argument('-e','--epsilon', type=float, default=0.99, metavar='Epsilon',
-                    help='Starting epsilon value(default: 0.99)')
+                    help='Starting epsilon value (default: 0.99)')
 parser.add_argument('--episods', type=int, default=5000,
-                    help='Number of training episods')
+                    help='Number of training episods (default:5000)')
 parser.add_argument('--max_t', type=int, default=10000,
-                    help='Max steps in each episod')
+                    help='Max steps in each episod (default:10000)')
 parser.add_argument('--render_each', type=int, default=100,
                     help='Number of episods before rendering (default:100 "after each 100 episods a full episod will be shown if the argument --render_while_training is set to True")')
 parser.add_argument('--render_while_training', default=False, action='store_true',
-                    help='True for rendering first episod of each 100 episod while training')
+                    help='True for rendering first episod of each 100 episod while training (default: False)')
+parser.add_argument('-i', '--initial_q_value', type=float, default=-10.0, metavar='Initial Q-values',
+                    help='The initial Q values for each state_action pair (default: -10.0)')
+parser.add_argument('-n', '--n_steps', type=int, default=10, metavar='n steps TD',
+                    help='The number of steps to use to calculat q_value (defaule: 10, use -1 for MC learning)')
 
 
 args = parser.parse_args()
@@ -95,7 +102,11 @@ render_while_training   = args.render_while_training
 max_t                   = args.max_t
 render_each             = args.render_each
 save_q_table            = args.save_q_table
+initial_q_value         = args.initial_q_value
+n_steps                 = args.n_steps
 
+# Define the writer for tensorboard
+writer = SummaryWriter(comment=f"M-Car_Q_L.{n_steps}_steps.ep{epsilon}.lr{alpha}.d{gamma}")
 
 # Define The agent
 class QLearningAgent:
@@ -129,7 +140,7 @@ class QLearningAgent:
              epsilon}
         """
         self.get_legal_actions = get_legal_actions
-        self._qvalues = defaultdict(lambda: defaultdict(lambda: -1.0))
+        self._qvalues = defaultdict(lambda: defaultdict(lambda: initial_q_value))
         self.alpha = alpha
         self.epsilon = epsilon
         self.discount = discount
@@ -171,8 +182,13 @@ class QLearningAgent:
         """
         g = self.discount
         a = self.alpha
-        _q = (1-a)*self.get_qvalue(state, action) + \
-             a*(reward + g*self.get_value(next_state))
+        # in the case of Terminal State
+        if next_state == None:
+            _q = (1-a)*self.get_qvalue(state, action) + \
+                a*reward
+        else:
+            _q = (1-a)*self.get_qvalue(state, action) + \
+                a*(reward + g*self.get_value(next_state))
              
         self.set_qvalue(state, action, _q)
 
@@ -185,7 +201,10 @@ class QLearningAgent:
         a = self.alpha
         l = len(state_action)
         reward = rewards[-1]
-        _q = reward + g*self.get_value(next_state)
+        if next_state == None:
+            _q = reward
+        else:
+            _q = reward + g*self.get_value(next_state)
 
         # print(f"rewards: {rewards}")
         # print(f"next_state value: {self.get_value(next_state)}")
@@ -220,7 +239,7 @@ class QLearningAgent:
         for action in possible_actions:
             _v = self.get_qvalue(state, action)
             if _v > best_value:
-                _v = best_value
+                best_value = _v 
                 best_action = action
 
         return action
@@ -264,7 +283,25 @@ class QLearningAgent:
         return Q_
 
 
+# env_1_1 = Observation_Wrapper(gym.make("MountainCar-v0").env)
+# env_2_1 = Observation_Wrapper(gym.make("MountainCar-v0").env)
+# env_5_1 = Observation_Wrapper(gym.make("MountainCar-v0").env)
+# env_1_10 = Observation_Wrapper(gym.make("MountainCar-v0").env)
+# env_2_10 = Observation_Wrapper(gym.make("MountainCar-v0").env)
+# env_5_10 = Observation_Wrapper(gym.make("MountainCar-v0").env)
+# env_1_50 = Observation_Wrapper(gym.make("MountainCar-v0").env)
+# env_2_50 = Observation_Wrapper(gym.make("MountainCar-v0").env)
+# env_5_50 = Observation_Wrapper(gym.make("MountainCar-v0").env)
+
 agent = QLearningAgent(alpha, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
+# agent_2_1 = QLearningAgent(alpha=0.2, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
+# agent_5_1 = QLearningAgent(alpha=0.5, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
+# agent_1_10 = QLearningAgent(alpha=0.1, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
+# agent_2_10 = QLearningAgent(alpha=0.2, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
+# agent_5_10 = QLearningAgent(alpha=0.5, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
+# agent_1_50 = QLearningAgent(alpha=0.1, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
+# agent_2_50 = QLearningAgent(alpha=0.2, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
+# agent_5_50 = QLearningAgent(alpha=0.5, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
 
 def play_and_train(env, agent, t_max=10**4, n=10):
     """
@@ -289,14 +326,25 @@ def play_and_train(env, agent, t_max=10**4, n=10):
         # agent.update(state, action, reward, next_state)
         if t > n:
             agent.update_multiple(state_action[-1*n:], rewards[-1*n:], next_state)
-        
-        
-
+                
         state = next_state
         total_reward += reward
         if done:
+            # print("Done it in this episod!")
+            # print(f"Last state_action pair was: {state_action[-1]}")
+            l_state, l_action = state_action[-1]
+            l_value = agent.get_qvalue(l_state, l_action)
+            # print(f"Last state_action value before updating was: {l_value}")
+            # print("__________________________________")
             for i in range(n-1):
-                agent.update_multiple(state_action[-1*i:], rewards[-1*i:], next_state)
+                # print(f"Updating q_value for state_action pair: {state_action[-1*i-1]}")
+                s_, a_ = state_action[-1*i-1]
+                v_ = agent.get_qvalue(s_, a_)
+                # print(f"Value before updating: {v_}")
+                agent.update_multiple(state_action[-1*i-1:], rewards[-1*i-1:], next_state= None)
+                v_ = agent.get_qvalue(s_, a_)
+                # print(f"Value after updating: {v_}")
+                # print("###########")
             break
 
     return total_reward
@@ -310,134 +358,28 @@ fig, ax = create_plot()
 
 # Training
 for i in range(episods):
-    all_rewards.append(play_and_train(env, agent, t_max=max_t))
+    all_rewards.append(play_and_train(env, agent, t_max=max_t, n=n_steps))
 
     if i ==0:
-        avarage_rewards = [all_rewards[0]]
+        avarage_reward = all_rewards[0]
     elif(i < 100):
-        avarage_rewards.append(sum(all_rewards)*1.0/(i+1))
+        avarage_reward = sum(all_rewards)*1.0/(i+1)
     else:
-        avarage_rewards.append(sum(all_rewards[-100:])/100.0)
+        avarage_reward = sum(all_rewards[-100:])/100.0
 
-    plot_dict = {'Rewards': all_rewards, 'Avarage Rewards': avarage_rewards}
+    writer.add_scalars('Rewards', {'reward': all_rewards[-1],
+                                   'avg_r': avarage_reward}, i)
+
+    # plot_dict = {'Rewards': all_rewards, 'Avarage Rewards': avarage_rewards}
 
     if i % 100 == 0 and i > 0:
         agent.epsilon = agent.epsilon*decay
-        plot_data(ax, plot_dict)
+        # plot_data(ax, plot_dict)
         name = f"mountain_{int(i/100)}"
         # agent.save_qvalue(name)
+        if i % 1000 == 0 and i > 0 and save_q_table:
+            name = f"dict_{int(i/1000.0)}_n_{n_steps}.txt"
+            #write_dict(agent._qvalues, filename=name)
 
-write_dict(agent._qvalues)
-
-# if train:
-#     print(f"Training will start now for {episods} episods with the following parameters:")
-#     print(f"Gamma= {gamma}, Alpha= {alpha}, decay factor= {decay}, epsilon={epsilon}")
-#     print(f"render while training= {render_while_training}, render_each= {render_each}, test the results after training= {test_after_training}")
-#     print(f"q_table file name= {data_file}, save Q-table after training= {save_q_table}")
-
-# variable = input('Press any key to continue!: ')
-	
-
-# # Loading the existing Q-table of Creating a new Q-table
-# # for Q-values for each (state, action) pair
-# if os.path.isfile(data_file) and use_existing_q_table:
-#     q_table = pd.read_csv(data_file,header=None).to_numpy()
-#     # Check for matching shape
-#     q_shape = (env.observation_space.n, env.action_space.n)
-#     meassage = """\nThe q_table you chose has shape of {} which does not match the needed shape of {}Please make sure that the q-table you use has the right dimenstions!""".format(q_table.shape, q_shape)
-#     assert q_table.shape == q_shape, meassage
-# else:
-#     q_table = np.zeros([env.observation_space.n, env.action_space.n])
-
-# import random
-# from IPython.display import clear_output
-
-
-
-
-# if train:
-
-#     all_rewards = []
-#     all_penallties = []
-
-#     # start of training
-#     for i in range(1, episods):
-        
-#         state = env.reset()
-
-#         epoches, penalties, rewards = 0, 0, 0
-#         done = False
-
-#         while not done:
-#             if i % render_each ==0:
-#                 if render_while_training:
-#                     env.render()
-#                     print(q_table[state])
-#                     time.sleep(0.05)
-
-#             if random.uniform(0, 1) < epsilon:
-#                 action = env.action_space.sample()
-#             else:
-#                 action = np.argmax(q_table[state])
-
-#             next_state, reward, done, info = env.step(action)
-
-#             old_value = q_table[state, action]
-#             next_max = np.max(q_table[next_state])
-
-#             new_value = (1 - alpha) * old_value + alpha*(reward + gamma *next_max)
-#             q_table[state, action] = new_value
-
-#             if reward == -10:
-#                 penalties += 1
-            
-#             state = next_state
-#             epoches += 1
-#             rewards += reward
-
-#         all_rewards.append(rewards)
-
-#         if i % 100 == 0:
-#             epsilon = epsilon*decay
-#             clear_output(wait=True)
-#             print("___________________________________________")
-#             print(f"Episode: {i}\nCurrent epsilon: {epsilon}")
-#             print(f"Avarage reward over past 100 episod: {sum(all_rewards)/100.0}")
-#             all_rewards = []
-
-#     if save_q_table:
-#         df = pd.DataFrame(q_table)
-#         df.to_csv(data_file, index= False, header=False)
-# if (not train) or test_after_training:
-#     if not train:
-#         q_table = pd.read_csv(data_file,header=None).to_numpy()
-    
-#     # Sleeping for 3 seconds to get ready for testing
-#     if test_after_training:
-#         print("Testing the trained Q-table will start in 3 seconds:")
-#         time.sleep(1)
-#         print(2)
-#         time.sleep(1)
-#         print(1)
-#         time.sleep(1)
-
-#     epsilon = 0.00
-#     #print(q_table)
-#     for i in range(20):
-#         state = env.reset()
-#         done = False
-#         steps = 0
-#         while not done:
-#             clear_output(wait=True)
-#             env.render()
-#             #print(q_table[state])
-#             time.sleep(0.05)
-            
-#             action = np.argmax(q_table[state])
-#             state, re, done, info = env.step(action)
-#             steps +=1
-
-#         # Sleeping after each episod for 0.5 sec
-#         print("done in {} steps".format(steps))
-#         time.sleep(0.5)
-
+writer.close()
+# write_dict(agent._qvalues)

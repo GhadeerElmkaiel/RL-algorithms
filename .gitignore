@@ -1,4 +1,6 @@
 **/__pycache__
 q_table.csv
 *test.py
+*test.txt
 *.npy
+runs
