@@ -14,3 +14,7 @@ As in MountainCar it is possible to get discrete observations and Use standart Q
 
 In this code it is possible to change multiple training parameters like learning rat, epsilon, decay, number of TD steps and multiple other parameters.
 
+### Visualize_observation:
+Code for visualizing the observations' distribution so it is possible to digitize the observation and use a table Q-learining. 
+
+

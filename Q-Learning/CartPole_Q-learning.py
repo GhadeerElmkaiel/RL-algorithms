@@ -6,7 +6,7 @@
 # in the gym CartPole-v0 environment.
 # It is possible to change and tune # multiple parameters as training
 # parametars (epsilon, learning rate, decay) and the initial Q-values 
-# for each state_action pair. by doing so it is possible to understand 
+# for each state_action pair, by doing so it is possible to understand 
 # how each parameter can affect the training process
 
 import gym
@@ -17,7 +17,7 @@ from collections import defaultdict
 from torch.utils.tensorboard import SummaryWriter
 
 
-parser = argparse.ArgumentParser(description='Python Q-learning example')
+parser = argparse.ArgumentParser(description='CartPole Q-learning example')
 
 parser.add_argument('--q_table_file', type=str, default='q_table_mountain.csv', metavar='The Q table file path',
                     help='The name of csv file that contains the q_table (default: q_table_mountain.csv)')
@@ -84,6 +84,8 @@ done_reward             = args.done_reward
 #         ax.set_xlim(min(xmin, -xmax), max(xmax, -xmin))
 #         ax.grid()
 #     f.show()
+#
+# env = gym.make(CartPole-v0).env
 #
 # seen_obs = []
 # for _ in range(10000):
@@ -276,22 +278,19 @@ class QLearningAgent:
 
         return action
 
-    def save_qvalue(self, filename='mountain_q'):
+    def save_qvalue(self, filename='CartPole'):
         """
         Saving the qvalue dict
         """
-        d_ = dict(self._qvalues)
-        np.save(filename, np.array(d_))
+        #TODO
+        pass
 
-    def load_qvalue(self, filename='mountain_q'):
+    def load_qvalue(self, filename='CartPole'):
         """
         Loading the qvalue dict
         """
-        n_ = f"{filename}.npy"
-        P = np.load(n_)
-        Q_ = defaultdict(lambda: defaultdict(lambda: 0))
-        Q_.update(P.item())
-        return Q_
+        #TODO
+        pass
 
 # Function for Playing a full episod and train the agent
 def play_and_train(env, agent, max_t = 10**4, n=10):

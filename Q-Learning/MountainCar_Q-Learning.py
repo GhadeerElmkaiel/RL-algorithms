@@ -6,7 +6,7 @@
 # Gym MountainCar-v0 environment.
 # It is possible to change and tune # multiple parameters as training
 # parametars (epsilon, learning rate, decay) and the initial Q-values 
-# for each state_action pair. by doing so it is possible to understand 
+# for each state_action pair, by doing so it is possible to understand 
 # how each parameter can affect the training process
 
 
@@ -23,7 +23,7 @@ from gym.core import ObservationWrapper
 
 
 
-parser = argparse.ArgumentParser(description='Python Q-learning example')
+parser = argparse.ArgumentParser(description='MountainCar Q-learning example')
 # parser.add_argument('--test', default=False, action='store_true',
 #                     help='for testing existing Q-table. When not mentioned will train the q-table')
 parser.add_argument('--q_table_file', type=str, default='q_table_mountain.csv', metavar='The Q table file path',
@@ -275,39 +275,19 @@ class QLearningAgent:
         """
         Saving the qvalue dict
         """
-        d_ = dict(self._qvalues)
-        np.save(filename, np.array(d_))
+        #TODO
+        pass
 
     def load_qvalue(self, filename='mountain_q'):
         """
         Loading the qvalue dict
         """
-        n_ = f"{filename}.npy"
-        P = np.load(n_)
-        Q_ = defaultdict(lambda: defaultdict(lambda: 0))
-        Q_.update(P.item())
-        return Q_
+        #TODO
+        pass
 
 
-# env_1_1 = Observation_Wrapper(gym.make("MountainCar-v0").env)
-# env_2_1 = Observation_Wrapper(gym.make("MountainCar-v0").env)
-# env_5_1 = Observation_Wrapper(gym.make("MountainCar-v0").env)
-# env_1_10 = Observation_Wrapper(gym.make("MountainCar-v0").env)
-# env_2_10 = Observation_Wrapper(gym.make("MountainCar-v0").env)
-# env_5_10 = Observation_Wrapper(gym.make("MountainCar-v0").env)
-# env_1_50 = Observation_Wrapper(gym.make("MountainCar-v0").env)
-# env_2_50 = Observation_Wrapper(gym.make("MountainCar-v0").env)
-# env_5_50 = Observation_Wrapper(gym.make("MountainCar-v0").env)
 
 agent = QLearningAgent(alpha, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
-# agent_2_1 = QLearningAgent(alpha=0.2, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
-# agent_5_1 = QLearningAgent(alpha=0.5, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
-# agent_1_10 = QLearningAgent(alpha=0.1, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
-# agent_2_10 = QLearningAgent(alpha=0.2, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
-# agent_5_10 = QLearningAgent(alpha=0.5, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
-# agent_1_50 = QLearningAgent(alpha=0.1, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
-# agent_2_50 = QLearningAgent(alpha=0.2, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
-# agent_5_50 = QLearningAgent(alpha=0.5, epsilon, gamma, get_legal_actions=lambda s: range(n_actions))
 
 def play_and_train(env, agent, t_max=10**4, n=10):
     """
@@ -376,16 +356,12 @@ for i in range(episods):
     writer.add_scalars('Rewards', {'reward': all_rewards[-1],
                                    'avg_r': avarage_reward}, i)
 
-    # plot_dict = {'Rewards': all_rewards, 'Avarage Rewards': avarage_rewards}
 
     if i % 100 == 0 and i > 0:
         agent.epsilon = agent.epsilon*decay
-        # plot_data(ax, plot_dict)
         name = f"mountain_{int(i/100)}"
         # agent.save_qvalue(name)
         if i % 1000 == 0 and i > 0 and save_q_table:
             name = f"dict_{int(i/1000.0)}_n_{n_steps}.txt"
-            #write_dict(agent._qvalues, filename=name)
 
 writer.close()
-# write_dict(agent._qvalues)
